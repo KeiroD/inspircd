@@ -1,3 +1,7 @@
+# BUILD STATUS
+![Build Status](https://travis-ci.org/KeiroD/inspircd.svg?branch=master)
+
+
 ### Important Notice
 
 The `master` branch contains the latest development version. If you are running
