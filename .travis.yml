@@ -1,10 +1,7 @@
-language: perl
-perl:
-  - "5.22"
 before_script:
   - mkdir build
   - cd build
-  - ./configure
+  - ./configure --disable-interactive --enablegnutls --enable-epoll --prefix=test
 
 script:
   - make
