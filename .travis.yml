@@ -1,6 +1,4 @@
 before_script:
-  - mkdir build
-  - cd build
   - ./configure --disable-interactive --enablegnutls --enable-epoll --prefix=test
 
 script:
