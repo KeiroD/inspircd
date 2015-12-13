@@ -1,5 +1,5 @@
 before_script:
-  - ./configure --disable-interactive --enablegnutls --enable-epoll --prefix=test
+  - ./configure --disable-interactive --enablegnutls --enable-epoll --prefix=test --development
 
 script:
   - make
