@@ -7,3 +7,16 @@ script:
 notifications:
   irc:
   - "irc.furryavalon.net#FurryAvalon"
+
+# blacklist
+branches:
+    - insp10
+    - insp11
+    - insp12
+    - obsolete/insp21
+
+# whitelist
+branches:
+  only:
+    - master
+    - insp20
