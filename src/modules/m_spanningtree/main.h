@@ -44,7 +44,6 @@ const long MinCompatProtocol = 1202;
 
 /** Forward declarations
  */
-class SpanningTreeCommands;
 class SpanningTreeUtilities;
 class CacheRefreshTimer;
 class TreeServer;
@@ -63,7 +62,7 @@ class ModuleSpanningTree : public Module
 
 	/** Server to server only commands, not registered in the core
 	 */
-	SpanningTreeCommands* commands;
+	SpanningTreeCommands commands;
 
 	/** Next membership id assigned when a local user joins a channel
 	 */
@@ -149,7 +148,7 @@ class ModuleSpanningTree : public Module
 	ModResult OnPreCommand(std::string &command, std::vector<std::string>& parameters, LocalUser *user, bool validated, const std::string &original_line) CXX11_OVERRIDE;
 	void OnPostCommand(Command*, const std::vector<std::string>& parameters, LocalUser* user, CmdResult result, const std::string& original_line) CXX11_OVERRIDE;
 	void OnUserConnect(LocalUser* source) CXX11_OVERRIDE;
-	void OnUserInvite(User* source,User* dest,Channel* channel, time_t) CXX11_OVERRIDE;
+	void OnUserInvite(User* source, User* dest, Channel* channel, time_t timeout, unsigned int notifyrank, CUList& notifyexcepts) CXX11_OVERRIDE;
 	void OnPostTopicChange(User* user, Channel* chan, const std::string &topic) CXX11_OVERRIDE;
 	void OnUserMessage(User* user, void* dest, int target_type, const std::string& text, char status, const CUList& exempt_list, MessageType msgtype) CXX11_OVERRIDE;
 	void OnBackgroundTimer(time_t curtime) CXX11_OVERRIDE;

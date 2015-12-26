@@ -1,7 +1,7 @@
 /*
  * InspIRCd -- Internet Relay Chat Daemon
  *
- *   Copyright (C) 2009 Daniel De Graaf <danieldg@inspircd.org>
+ *   Copyright (C) 2015 Attila Molnar <attilamolnar@hush.com>
  *
  * This file is part of InspIRCd.  InspIRCd is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General Public
@@ -17,25 +17,29 @@
  */
 
 
-#include "inspircd.h"
+#pragma once
 
-#include "utils.h"
-#include "treesocket.h"
-#include "commands.h"
-
-/**
- * SAVE command - force nick change to UID on timestamp match
- */
-CmdResult CommandSave::Handle(User* user, std::vector<std::string>& params)
+namespace IRCv3
 {
-	User* u = ServerInstance->FindUUID(params[0]);
-	if (!u)
-		return CMD_FAILURE;
-
-	time_t ts = atol(params[1].c_str());
-
-	if (u->age == ts)
-		u->ChangeNick(u->uuid, SavedTimestamp);
-
-	return CMD_SUCCESS;
+	class WriteNeighborsWithCap;
 }
+
+class IRCv3::WriteNeighborsWithCap : public User::ForEachNeighborHandler
+{
+	const Cap::Capability& cap;
+	const std::string& msg;
+
+	void Execute(LocalUser* user) CXX11_OVERRIDE
+	{
+		if (cap.get(user))
+			user->Write(msg);
+	}
+
+ public:
+	WriteNeighborsWithCap(User* user, const std::string& message, const Cap::Capability& capability)
+		: cap(capability)
+		, msg(message)
+	{
+		user->ForEachNeighbor(*this, false);
+	}
+};

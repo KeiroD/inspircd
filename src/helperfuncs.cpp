@@ -37,14 +37,7 @@ User* InspIRCd::FindNick(const std::string &nick)
 {
 	if (!nick.empty() && isdigit(*nick.begin()))
 		return FindUUID(nick);
-
-	user_hash::iterator iter = this->Users->clientlist.find(nick);
-
-	if (iter == this->Users->clientlist.end())
-		/* Couldn't find it */
-		return NULL;
-
-	return iter->second;
+	return FindNickOnly(nick);
 }
 
 User* InspIRCd::FindNickOnly(const std::string &nick)
@@ -134,7 +127,8 @@ void InspIRCd::StripColor(std::string &sentence)
 		else
 			seq = 0;
 
-		if (seq || ((*i == 2) || (*i == 15) || (*i == 22) || (*i == 21) || (*i == 31)))
+		// Strip all control codes too except \001 for CTCP
+		if (seq || ((*i < 32) && (*i != 1)))
 			i = sentence.erase(i);
 		else
 			++i;

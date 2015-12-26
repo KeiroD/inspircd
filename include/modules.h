@@ -487,8 +487,10 @@ class CoreExport Module : public classbase, public usecountbase
 	 * @param dest The user being invited
 	 * @param channel The channel the user is being invited to
 	 * @param timeout The time the invite will expire (0 == never)
+	 * @param notifyrank Rank required to get an invite announcement (if enabled)
+	 * @param notifyexcepts List of users to not send the default NOTICE invite announcement to
 	 */
-	virtual void OnUserInvite(User* source,User* dest,Channel* channel, time_t timeout);
+	virtual void OnUserInvite(User* source, User* dest, Channel* channel, time_t timeout, unsigned int notifyrank, CUList& notifyexcepts);
 
 	/** Called whenever a user is about to PRIVMSG A user or a channel, before any processing is done.
 	 * Returning any nonzero value from this function stops the process immediately, causing no
@@ -1213,6 +1215,17 @@ class CoreExport ModuleManager : public fakederef<ModuleManager>
 	 * @return A ModuleMap containing all loaded modules
 	 */
 	const ModuleMap& GetModules() const { return Modules; }
+
+	/** Make a service referenceable by dynamic_references
+	 * @param name Name that will be used by dynamic_references to find the object
+	 * @param service Service to make referenceable by dynamic_references
+	 */
+	void AddReferent(const std::string& name, ServiceProvider* service);
+
+	/** Make a service no longer referenceable by dynamic_references
+	 * @param service Service to make no longer referenceable by dynamic_references
+	 */
+	void DelReferent(ServiceProvider* service);
 };
 
 /** Do not mess with these functions unless you know the C preprocessor

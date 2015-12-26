@@ -878,6 +878,9 @@
 # hostcycle: If loaded, when a user gets a host or ident set, it will
 # cycle them in all their channels. If not loaded it will simply change
 # their host/ident without cycling them.
+# This module is compatible with the ircv3_chghost module. Clients
+# supporting the chghost extension will get the chghost message instead
+# of seeing a host cycle.
 #<module name="hostcycle">
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -964,6 +967,32 @@
 # enabled. Note that extended-join can be incompatible with delayjoin
 # and host cycling.
 #<ircv3 accountnotify="on" awaynotify="on" extendedjoin="on">
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# IRCv3 cap-notify module: Provides the cap-notify IRCv3.2 extension.
+# Required for IRCv3.2 conformance.
+#<module name="ircv3_capnotify">
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# IRCv3 chghost module: Provides the chghost IRCv3.2 extension which
+# allows capable clients to learn when the host/ident of another user
+# changes without cycling the user. This module is compatible with the
+# hostcycle module. If both are loaded, clients supporting the chghost
+# extension will get the chghost message and won't see host cycling.
+#<module name="ircv3_chghost">
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# IRCv3 echo-message module: Provides the echo-message IRCv3.2
+# extension which allows capable clients to get an acknowledgement when
+# their messages are delivered and learn what modifications, if any,
+# were applied to them.
+#<module name="ircv3_echomessage">
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# IRCv3 invite-notify module: Provides the invite-notify IRCv3.2
+# extension which notifies supporting clients when a user invites
+# another user into a channel. This respects <options:announceinvites>.
+#<module name="ircv3_invitenotify">
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Join flood module: Adds support for join flood protection +j X:Y.
@@ -1834,8 +1863,8 @@
 # http://wiki.inspircd.org/Modules/ssl_openssl                        #
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-# Strip color module: Adds channel mode +S that strips mIRC color
-# codes from all messages sent to the channel.
+# Strip color module: Adds channel mode +S that strips color codes and
+# all control codes except CTCP from all messages sent to the channel.
 #<module name="stripcolor">
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
