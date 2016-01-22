@@ -194,7 +194,7 @@ class Cap::ManagerImpl : public Cap::Manager, public ReloadModule::EventListener
 			cap->set(user, false);
 		}
 
-		ServerInstance->Modules.DelReferent(cap);		
+		ServerInstance->Modules.DelReferent(cap);
 		cap->Unregister();
 		caps.erase(cap->GetName());
 	}
@@ -341,7 +341,7 @@ class CommandCap : public SplitCommand
 
 	static void DisplayResult(LocalUser* user, std::string& result)
 	{
-		if (result.size() > 5)
+		if (*result.rbegin() == ' ')
 			result.erase(result.end()-1);
 		user->WriteCommand("CAP", result);
 	}
