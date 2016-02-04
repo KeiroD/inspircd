@@ -6,7 +6,7 @@ script:
 
 notifications:
   irc:
-  - "irc.furryavalon.net#FurryAvalon"
+  - "irc.cleverpun.com#irc"
 
 # blacklist
 branches:
