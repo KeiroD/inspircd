@@ -109,10 +109,12 @@ class ModuleHttpStats : public Module, public HTTPRequestEventListener
 				data << "<uptime><boot_time_t>" << ServerInstance->startup_time << "</boot_time_t></uptime>";
 
 				data << "<isupport>";
-				const std::vector<std::string>& isupport = ServerInstance->ISupport.GetLines();
-				for (std::vector<std::string>::const_iterator it = isupport.begin(); it != isupport.end(); it++)
+				const std::vector<Numeric::Numeric>& isupport = ServerInstance->ISupport.GetLines();
+				for (std::vector<Numeric::Numeric>::const_iterator i = isupport.begin(); i != isupport.end(); ++i)
 				{
-					data << Sanitize(*it) << std::endl;
+					const Numeric::Numeric& num = *i;
+					for (std::vector<std::string>::const_iterator j = num.GetParams().begin(); j != num.GetParams().end()-1; ++j)
+						data << "<token>" << Sanitize(*j) << "</token>" << std::endl;
 				}
 				data << "</isupport></general><xlines>";
 				std::vector<std::string> xltypes = ServerInstance->XLines->GetAllTypes();
@@ -217,7 +219,15 @@ class ModuleHttpStats : public Module, public HTTPRequestEventListener
 					data << "</server>";
 				}
 
-				data << "</serverlist></inspircdstats>";
+				data << "</serverlist><commandlist>";
+
+				const CommandParser::CommandMap& commands = ServerInstance->Parser.GetCommands();
+				for (CommandParser::CommandMap::const_iterator i = commands.begin(); i != commands.end(); ++i)
+				{
+					data << "<command><name>" << i->second->name << "</name><usecount>" << i->second->use_count << "</usecount></command>";
+				}
+
+				data << "</commandlist></inspircdstats>";
 
 				/* Send the document back to m_httpd */
 				HTTPDocumentResponse response(this, *http, &data, 200);

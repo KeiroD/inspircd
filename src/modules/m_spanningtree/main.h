@@ -131,10 +131,6 @@ class ModuleSpanningTree : public Module
 	 */
 	ModResult HandleConnect(const std::vector<std::string>& parameters, User* user);
 
-	/** Attempt to send a message to a user
-	 */
-	void RemoteMessage(User* user, const char* format, ...) CUSTOM_PRINTF(3, 4);
-
 	/** Display a time as a human readable string
 	 */
 	static std::string TimeToStr(time_t secs);
@@ -165,7 +161,7 @@ class ModuleSpanningTree : public Module
 	void OnOper(User* user, const std::string &opertype) CXX11_OVERRIDE;
 	void OnAddLine(User *u, XLine *x) CXX11_OVERRIDE;
 	void OnDelLine(User *u, XLine *x) CXX11_OVERRIDE;
-	ModResult OnStats(char statschar, User* user, string_list &results) CXX11_OVERRIDE;
+	ModResult OnStats(Stats::Context& stats) CXX11_OVERRIDE;
 	ModResult OnSetAway(User* user, const std::string &awaymsg) CXX11_OVERRIDE;
 	void OnLoadModule(Module* mod) CXX11_OVERRIDE;
 	void OnUnloadModule(Module* mod) CXX11_OVERRIDE;

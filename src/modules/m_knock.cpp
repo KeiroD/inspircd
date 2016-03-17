@@ -45,30 +45,30 @@ class CommandKnock : public Command
 		Channel* c = ServerInstance->FindChan(parameters[0]);
 		if (!c)
 		{
-			user->WriteNumeric(ERR_NOSUCHNICK, "%s :No such channel", parameters[0].c_str());
+			user->WriteNumeric(Numerics::NoSuchNick(parameters[0]));
 			return CMD_FAILURE;
 		}
 
 		if (c->HasUser(user))
 		{
-			user->WriteNumeric(ERR_KNOCKONCHAN, "%s :Can't KNOCK on %s, you are already on that channel.", c->name.c_str(), c->name.c_str());
+			user->WriteNumeric(ERR_KNOCKONCHAN, c->name, InspIRCd::Format("Can't KNOCK on %s, you are already on that channel.", c->name.c_str()));
 			return CMD_FAILURE;
 		}
 
 		if (c->IsModeSet(noknockmode))
 		{
-			user->WriteNumeric(480, ":Can't KNOCK on %s, +K is set.", c->name.c_str());
+			user->WriteNumeric(480, InspIRCd::Format("Can't KNOCK on %s, +K is set.", c->name.c_str()));
 			return CMD_FAILURE;
 		}
 
 		if (!c->IsModeSet(inviteonlymode))
 		{
-			user->WriteNumeric(ERR_CHANOPEN, "%s :Can't KNOCK on %s, channel is not invite only so knocking is pointless!", c->name.c_str(), c->name.c_str());
+			user->WriteNumeric(ERR_CHANOPEN, c->name, InspIRCd::Format("Can't KNOCK on %s, channel is not invite only so knocking is pointless!", c->name.c_str()));
 			return CMD_FAILURE;
 		}
 
 		if (sendnotice)
-			c->WriteChannelWithServ(ServerInstance->Config->ServerName, "NOTICE %s :User %s is KNOCKing on %s (%s)", c->name.c_str(), user->nick.c_str(), c->name.c_str(), parameters[1].c_str());
+			c->WriteNotice(InspIRCd::Format("User %s is KNOCKing on %s (%s)", user->nick.c_str(), c->name.c_str(), parameters[1].c_str()));
 
 		if (sendnumeric)
 			c->WriteChannelWithServ(ServerInstance->Config->ServerName, "710 %s %s %s :is KNOCKing: %s", c->name.c_str(), c->name.c_str(), user->GetFullHost().c_str(), parameters[1].c_str());

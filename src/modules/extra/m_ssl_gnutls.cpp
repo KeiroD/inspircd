@@ -29,7 +29,11 @@
 #if defined __clang__
 # pragma clang diagnostic ignored "-Wc++11-extensions"
 #elif defined __GNUC__
-# pragma GCC diagnostic ignored "-pedantic"
+# if __GNUC__ < 6
+#  pragma GCC diagnostic ignored "-pedantic"
+# else
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+# endif
 #endif
 
 #include <gnutls/gnutls.h>
@@ -55,7 +59,7 @@
 #endif
 
 #ifdef _WIN32
-# pragma comment(lib, "libgnutls-28.lib")
+# pragma comment(lib, "libgnutls-30.lib")
 #endif
 
 /* $CompileFlags: pkgconfincludes("gnutls","/gnutls/gnutls.h","") eval("print `libgcrypt-config --cflags | tr -d \r` if `pkg-config --modversion gnutls 2>/dev/null | tr -d \r` lt '2.12'") */

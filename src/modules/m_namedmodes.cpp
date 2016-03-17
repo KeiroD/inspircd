@@ -30,11 +30,16 @@ static void DisplayList(User* user, Channel* channel)
 			continue;
 		items << " +" << mh->name;
 		if (mh->GetNumParams(true))
-			items << " " << channel->GetModeParameter(mh);
+		{
+			if ((mh->name == "key") && (!channel->HasUser(user)) && (!user->HasPrivPermission("channels/auspex")))
+				items << " <key>";
+			else
+				items << " " << channel->GetModeParameter(mh);
+		}
 	}
 	const std::string line = ":" + ServerInstance->Config->ServerName + " 961 " + user->nick + " " + channel->name;
 	user->SendText(line, items);
-	user->WriteNumeric(960, "%s :End of mode list", channel->name.c_str());
+	user->WriteNumeric(960, channel->name, "End of mode list");
 }
 
 class CommandProp : public Command
@@ -50,7 +55,7 @@ class CommandProp : public Command
 		Channel* const chan = ServerInstance->FindChan(parameters[0]);
 		if (!chan)
 		{
-			src->WriteNumeric(ERR_NOSUCHNICK, "%s :No such nick/channel", parameters[0].c_str());
+			src->WriteNumeric(Numerics::NoSuchNick(parameters[0]));
 			return CMD_FAILURE;
 		}
 
@@ -64,6 +69,8 @@ class CommandProp : public Command
 		while (i < parameters.size())
 		{
 			std::string prop = parameters[i++];
+			if (prop.empty())
+				continue;
 			bool plus = prop[0] != '-';
 			if (prop[0] == '+' || prop[0] == '-')
 				prop.erase(prop.begin());

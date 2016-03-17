@@ -127,16 +127,15 @@ void ModuleSpanningTree::ShowLinks(TreeServer* Current, User* user, int hops)
 	else if ((Current->Hidden) && (!user->IsOper()))
 		return;
 
-	user->WriteNumeric(RPL_LINKS, "%s %s :%d %s",	Current->GetName().c_str(),
-			(Utils->FlatLinks && (!user->IsOper())) ? ServerInstance->Config->ServerName.c_str() : Parent.c_str(),
-			(Utils->FlatLinks && (!user->IsOper())) ? 0 : hops,
-			Current->GetDesc().c_str());
+	user->WriteNumeric(RPL_LINKS, Current->GetName(),
+			(((Utils->FlatLinks) && (!user->IsOper())) ? ServerInstance->Config->ServerName : Parent),
+			InspIRCd::Format("%d %s", (((Utils->FlatLinks) && (!user->IsOper())) ? 0 : hops), Current->GetDesc().c_str()));
 }
 
 void ModuleSpanningTree::HandleLinks(const std::vector<std::string>& parameters, User* user)
 {
 	ShowLinks(Utils->TreeRoot,user,0);
-	user->WriteNumeric(RPL_ENDOFLINKS, "* :End of /LINKS list.");
+	user->WriteNumeric(RPL_ENDOFLINKS, '*', "End of /LINKS list.");
 }
 
 std::string ModuleSpanningTree::TimeToStr(time_t secs)
@@ -304,26 +303,13 @@ ModResult ModuleSpanningTree::HandleVersion(const std::vector<std::string>& para
 		// or the server is a 2.0 server and does not send a full version.
 		bool showfull = ((user->IsOper()) && (!found->GetFullVersion().empty()));
 		const std::string& Version = (showfull ? found->GetFullVersion() : found->GetVersion());
-		user->WriteNumeric(RPL_VERSION, ":%s", Version.c_str());
+		user->WriteNumeric(RPL_VERSION, Version);
 	}
 	else
 	{
-		user->WriteNumeric(ERR_NOSUCHSERVER, "%s :No such server", parameters[0].c_str());
+		user->WriteNumeric(ERR_NOSUCHSERVER, parameters[0], "No such server");
 	}
 	return MOD_RES_DENY;
-}
-
-/* This method will attempt to get a message to a remote user.
- */
-void ModuleSpanningTree::RemoteMessage(User* user, const char* format, ...)
-{
-	std::string text;
-	VAFORMAT(text, format, format);
-
-	if (IS_LOCAL(user))
-		user->WriteNotice(text);
-	else
-		ServerInstance->PI->SendUserNotice(user, text);
 }
 
 ModResult ModuleSpanningTree::HandleConnect(const std::vector<std::string>& parameters, User* user)
@@ -335,25 +321,25 @@ ModResult ModuleSpanningTree::HandleConnect(const std::vector<std::string>& para
 		{
 			if (InspIRCd::Match(ServerInstance->Config->ServerName, assign(x->Name), rfc_case_insensitive_map))
 			{
-				RemoteMessage(user, "*** CONNECT: Server \002%s\002 is ME, not connecting.",x->Name.c_str());
+				user->WriteRemoteNotice(InspIRCd::Format("*** CONNECT: Server \002%s\002 is ME, not connecting.", x->Name.c_str()));
 				return MOD_RES_DENY;
 			}
 
 			TreeServer* CheckDupe = Utils->FindServer(x->Name.c_str());
 			if (!CheckDupe)
 			{
-				RemoteMessage(user, "*** CONNECT: Connecting to server: \002%s\002 (%s:%d)",x->Name.c_str(),(x->HiddenFromStats ? "<hidden>" : x->IPAddr.c_str()),x->Port);
+				user->WriteRemoteNotice(InspIRCd::Format("*** CONNECT: Connecting to server: \002%s\002 (%s:%d)", x->Name.c_str(), (x->HiddenFromStats ? "<hidden>" : x->IPAddr.c_str()), x->Port));
 				ConnectServer(x);
 				return MOD_RES_DENY;
 			}
 			else
 			{
-				RemoteMessage(user, "*** CONNECT: Server \002%s\002 already exists on the network and is connected via \002%s\002", x->Name.c_str(), CheckDupe->GetParent()->GetName().c_str());
+				user->WriteRemoteNotice(InspIRCd::Format("*** CONNECT: Server \002%s\002 already exists on the network and is connected via \002%s\002", x->Name.c_str(), CheckDupe->GetParent()->GetName().c_str()));
 				return MOD_RES_DENY;
 			}
 		}
 	}
-	RemoteMessage(user, "*** CONNECT: No server matching \002%s\002 could be found in the config file.",parameters[0].c_str());
+	user->WriteRemoteNotice(InspIRCd::Format("*** CONNECT: No server matching \002%s\002 could be found in the config file.", parameters[0].c_str()));
 	return MOD_RES_DENY;
 }
 

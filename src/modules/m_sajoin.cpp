@@ -53,7 +53,7 @@ class CommandSajoin : public Command
 
 			if (dest->server->IsULine())
 			{
-				user->WriteNumeric(ERR_NOPRIVILEGES, ":Cannot use an SA command on a u-lined client");
+				user->WriteNumeric(ERR_NOPRIVILEGES, "Cannot use an SA command on a u-lined client");
 				return CMD_FAILURE;
 			}
 			if (IS_LOCAL(user) && !ServerInstance->IsChannel(channel))
@@ -66,7 +66,7 @@ class CommandSajoin : public Command
 			Channel* chan = ServerInstance->FindChan(channel);
 			if ((chan) && (chan->HasUser(dest)))
 			{
-				user->SendText(":" + user->server->GetName() + " NOTICE " + user->nick + " :*** " + dest->nick + " is already on " + channel);
+				user->WriteRemoteNotice("*** " + dest->nick + " is already on " + channel);
 				return CMD_FAILURE;
 			}
 

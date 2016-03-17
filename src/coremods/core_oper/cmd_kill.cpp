@@ -117,7 +117,7 @@ CmdResult CommandKill::Handle (const std::vector<std::string>& parameters, User 
 			u->Write(":%s KILL %s :%s!%s!%s (%s)", ServerInstance->Config->HideKillsServer.empty() ? user->GetFullHost().c_str() : ServerInstance->Config->HideKillsServer.c_str(),
 					u->nick.c_str(),
 					ServerInstance->Config->ServerName.c_str(),
-					user->dhost.c_str(),
+					ServerInstance->Config->HideKillsServer.empty() ? user->dhost.c_str() : ServerInstance->Config->HideKillsServer.c_str(),
 					ServerInstance->Config->HideKillsServer.empty() ? user->nick.c_str() : ServerInstance->Config->HideKillsServer.c_str(),
 					parameters[1].c_str());
 
@@ -129,7 +129,7 @@ CmdResult CommandKill::Handle (const std::vector<std::string>& parameters, User 
 	}
 	else
 	{
-		user->WriteNumeric(ERR_NOSUCHNICK, "%s :No such nick/channel", parameters[0].c_str());
+		user->WriteNumeric(Numerics::NoSuchNick(parameters[0]));
 		return CMD_FAILURE;
 	}
 

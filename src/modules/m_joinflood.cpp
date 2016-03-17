@@ -95,7 +95,7 @@ class JoinFlood : public ParamMode<JoinFlood, SimpleExtItem<joinfloodsettings> >
 		std::string::size_type colon = parameter.find(':');
 		if ((colon == std::string::npos) || (parameter.find('-') != std::string::npos))
 		{
-			source->WriteNumeric(608, "%s :Invalid flood parameter",channel->name.c_str());
+			source->WriteNumeric(608, channel->name, "Invalid flood parameter");
 			return MODEACTION_DENY;
 		}
 
@@ -104,7 +104,7 @@ class JoinFlood : public ParamMode<JoinFlood, SimpleExtItem<joinfloodsettings> >
 		unsigned int nsecs = ConvToInt(parameter.substr(colon+1));
 		if ((njoins<1) || (nsecs<1))
 		{
-			source->WriteNumeric(608, "%s :Invalid flood parameter",channel->name.c_str());
+			source->WriteNumeric(608, channel->name, "Invalid flood parameter");
 			return MODEACTION_DENY;
 		}
 
@@ -136,7 +136,7 @@ class ModuleJoinFlood : public Module
 			joinfloodsettings *f = jf.ext.get(chan);
 			if (f && f->islocked())
 			{
-				user->WriteNumeric(609, "%s :This channel is temporarily unavailable (+j). Please try again later.",chan->name.c_str());
+				user->WriteNumeric(609, chan->name, "This channel is temporarily unavailable (+j). Please try again later.");
 				return MOD_RES_DENY;
 			}
 		}
@@ -159,7 +159,7 @@ class ModuleJoinFlood : public Module
 			{
 				f->clear();
 				f->lock();
-				memb->chan->WriteChannelWithServ((char*)ServerInstance->Config->ServerName.c_str(), "NOTICE %s :This channel has been closed to new users for 60 seconds because there have been more than %d joins in %d seconds.", memb->chan->name.c_str(), f->joins, f->secs);
+				memb->chan->WriteNotice(InspIRCd::Format("This channel has been closed to new users for 60 seconds because there have been more than %d joins in %d seconds.", f->joins, f->secs));
 			}
 		}
 	}

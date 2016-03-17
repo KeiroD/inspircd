@@ -519,9 +519,114 @@ class CoreExport User : public Extensible
 	 */
 	void WriteNotice(const std::string& text) { this->WriteCommand("NOTICE", ":" + text); }
 
-	void WriteNumeric(unsigned int numeric, const char* text, ...) CUSTOM_PRINTF(3, 4);
+	/** Send a NOTICE message from the local server to the user.
+	 * @param text Text to send
+	 */
+	virtual void WriteRemoteNotice(const std::string& text);
 
-	void WriteNumeric(unsigned int numeric, const std::string &text);
+	void WriteRemoteNumeric(const Numeric::Numeric& numeric);
+
+	template <typename T1>
+	void WriteRemoteNumeric(unsigned int numeric, T1 p1)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		WriteRemoteNumeric(n);
+	}
+
+	template <typename T1, typename T2>
+	void WriteRemoteNumeric(unsigned int numeric, T1 p1, T2 p2)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		n.push(p2);
+		WriteRemoteNumeric(n);
+	}
+
+	template <typename T1, typename T2, typename T3>
+	void WriteRemoteNumeric(unsigned int numeric, T1 p1, T2 p2, T3 p3)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		n.push(p2);
+		n.push(p3);
+		WriteRemoteNumeric(n);
+	}
+
+	template <typename T1, typename T2, typename T3, typename T4>
+	void WriteRemoteNumeric(unsigned int numeric, T1 p1, T2 p2, T3 p3, T4 p4)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		n.push(p2);
+		n.push(p3);
+		n.push(p4);
+		WriteRemoteNumeric(n);
+	}
+
+	template <typename T1, typename T2, typename T3, typename T4, typename T5>
+	void WriteRemoteNumeric(unsigned int numeric, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		n.push(p2);
+		n.push(p3);
+		n.push(p4);
+		n.push(p5);
+		WriteRemoteNumeric(n);
+	}
+
+	void WriteNumeric(const Numeric::Numeric& numeric);
+
+	template <typename T1>
+	void WriteNumeric(unsigned int numeric, T1 p1)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		WriteNumeric(n);
+	}
+
+	template <typename T1, typename T2>
+	void WriteNumeric(unsigned int numeric, T1 p1, T2 p2)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		n.push(p2);
+		WriteNumeric(n);
+	}
+
+	template <typename T1, typename T2, typename T3>
+	void WriteNumeric(unsigned int numeric, T1 p1, T2 p2, T3 p3)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		n.push(p2);
+		n.push(p3);
+		WriteNumeric(n);
+	}
+
+	template <typename T1, typename T2, typename T3, typename T4>
+	void WriteNumeric(unsigned int numeric, T1 p1, T2 p2, T3 p3, T4 p4)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		n.push(p2);
+		n.push(p3);
+		n.push(p4);
+		WriteNumeric(n);
+	}
+
+	template <typename T1, typename T2, typename T3, typename T4, typename T5>
+	void WriteNumeric(unsigned int numeric, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
+	{
+		Numeric::Numeric n(numeric);
+		n.push(p1);
+		n.push(p2);
+		n.push(p3);
+		n.push(p4);
+		n.push(p5);
+		WriteNumeric(n);
+	}
 
 	/** Write text to this user, appending CR/LF and prepending :nick!user\@host of the user provided in the first parameter.
 	 * @param user The user to prepend the :nick!user\@host of
@@ -746,6 +851,12 @@ class CoreExport LocalUser : public User, public insp::intrusive_list_node<Local
 	void SendText(const std::string& line);
 	void Write(const std::string& text);
 	void Write(const char*, ...) CUSTOM_PRINTF(2, 3);
+
+	/** Send a NOTICE message from the local server to the user.
+	 * The message will be sent even if the user is connected to a remote server.
+	 * @param text Text to send
+	 */
+	void WriteRemoteNotice(const std::string& text) CXX11_OVERRIDE;
 
 	/** Returns true or false for if a user can execute a privilaged oper command.
 	 * This is done by looking up their oper type from User::oper, then referencing

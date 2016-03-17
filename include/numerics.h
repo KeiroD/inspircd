@@ -35,7 +35,7 @@
  * Please note that the list may not be exhaustive, it'll be done when I have
  * nothing better to do with my time. -- w00t (jul 13, 2008)
  */
-enum Numerics
+enum
 {
 	/*
 	 * Reply range of numerics.
@@ -73,7 +73,8 @@ enum Numerics
 	RPL_MAPUSERS                    = 270, // insp-specific
 
 	RPL_AWAY                        = 301,
-
+	RPL_USERHOST					= 302,
+	RPL_ISON						= 303,
 	RPL_SYNTAX                      = 304, // insp-specific
 
 	RPL_UNAWAY                      = 305,
@@ -98,10 +99,12 @@ enum Numerics
 	RPL_TOPIC                       = 332,
 	RPL_TOPICTIME                   = 333, // not RFC, extremely common though
 
+	RPL_USERIP						= 340,
 	RPL_INVITING                    = 341,
 	RPL_INVITELIST                  = 346, // insp-specific (stolen from ircu)
 	RPL_ENDOFINVITELIST             = 347, // insp-specific (stolen from ircu)
 	RPL_VERSION                     = 351,
+	RPL_WHOREPLY                    = 352,
 	RPL_NAMREPLY                    = 353,
 	RPL_LINKS                       = 364,
 	RPL_ENDOFLINKS                  = 365,

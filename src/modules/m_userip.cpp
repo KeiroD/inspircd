@@ -33,7 +33,7 @@ class CommandUserip : public Command
 
 	CmdResult Handle (const std::vector<std::string> &parameters, User *user)
 	{
-		std::string retbuf = "340 " + user->nick + " :";
+		std::string retbuf;
 		int nicks = 0;
 		bool checked_privs = false;
 		bool has_privs = false;
@@ -52,7 +52,7 @@ class CommandUserip : public Command
 						checked_privs = true;
 						has_privs = user->HasPrivPermission("users/auspex");
 						if (!has_privs)
-							user->WriteNumeric(ERR_NOPRIVILEGES, ":Permission Denied - You do not have the required operator privileges");
+							user->WriteNumeric(ERR_NOPRIVILEGES, "Permission Denied - You do not have the required operator privileges");
 					}
 
 					if (!has_privs)
@@ -70,7 +70,7 @@ class CommandUserip : public Command
 		}
 
 		if (nicks != 0)
-			user->WriteServ(retbuf);
+			user->WriteNumeric(RPL_USERIP, retbuf);
 
 		return CMD_SUCCESS;
 	}
