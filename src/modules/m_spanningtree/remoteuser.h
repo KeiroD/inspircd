@@ -1,7 +1,7 @@
 /*
  * InspIRCd -- Internet Relay Chat Daemon
  *
- *   Copyright (C) 2008 Robin Burchell <robin+git@viroteck.net>
+ *   Copyright (C) 2016 Attila Molnar <attilamolnar@hush.com>
  *
  * This file is part of InspIRCd.  InspIRCd is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General Public
@@ -17,19 +17,16 @@
  */
 
 
-#include "inspircd.h"
+#pragma once
 
-#include "utils.h"
-#include "commands.h"
-
-CmdResult CommandPush::Handle(User* user, std::vector<std::string>& params)
+namespace SpanningTree
 {
-	User* u = ServerInstance->FindNick(params[0]);
-	if (!u)
-		return CMD_FAILURE;
-	if (IS_LOCAL(u))
-	{
-		u->Write(params[1]);
-	}
-	return CMD_SUCCESS;
+	class RemoteUser;
 }
+
+class SpanningTree::RemoteUser : public ::RemoteUser
+{
+ public:
+	RemoteUser(const std::string& uid, Server* srv);
+	void WriteRemoteNumeric(const Numeric::Numeric& numeric) CXX11_OVERRIDE;
+};

@@ -524,7 +524,7 @@ class CoreExport User : public Extensible
 	 */
 	virtual void WriteRemoteNotice(const std::string& text);
 
-	void WriteRemoteNumeric(const Numeric::Numeric& numeric);
+	virtual void WriteRemoteNumeric(const Numeric::Numeric& numeric);
 
 	template <typename T1>
 	void WriteRemoteNumeric(unsigned int numeric, T1 p1)
@@ -662,14 +662,6 @@ class CoreExport User : public Extensible
 	 * Modules may override this. Has no effect if this user is not local.
 	 */
 	void ForEachNeighbor(ForEachNeighborHandler& handler, bool include_self = true);
-
-	/** Write to the user, routing the line if the user is remote.
-	 */
-	virtual void SendText(const std::string& line) = 0;
-
-	/** Write to the user, routing the line if the user is remote.
-	 */
-	void SendText(const char* text, ...) CUSTOM_PRINTF(2, 3);
 
 	/** Return true if the user shares at least one channel with another user
 	 * @param other The other user to compare the channel list against
@@ -842,7 +834,6 @@ class CoreExport LocalUser : public User, public insp::intrusive_list_node<Local
 
 	void SetClientIP(const irc::sockets::sockaddrs& sa, bool recheck_eline = true);
 
-	void SendText(const std::string& line);
 	void Write(const std::string& text);
 	void Write(const char*, ...) CUSTOM_PRINTF(2, 3);
 
@@ -880,13 +871,12 @@ class CoreExport LocalUser : public User, public insp::intrusive_list_node<Local
 	bool HasModePermission(unsigned char mode, ModeType type);
 };
 
-class CoreExport RemoteUser : public User
+class RemoteUser : public User
 {
  public:
 	RemoteUser(const std::string& uid, Server* srv) : User(uid, srv, USERTYPE_REMOTE)
 	{
 	}
-	virtual void SendText(const std::string& line);
 };
 
 class CoreExport FakeUser : public User
@@ -904,7 +894,6 @@ class CoreExport FakeUser : public User
 	}
 
 	virtual CullResult cull();
-	virtual void SendText(const std::string& line);
 	virtual const std::string& GetFullHost();
 	virtual const std::string& GetFullRealHost();
 };

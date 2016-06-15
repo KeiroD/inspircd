@@ -21,6 +21,7 @@
 
 #include "servercommand.h"
 #include "commandbuilder.h"
+#include "remoteuser.h"
 
 /** Handle /RCONNECT
  */
@@ -297,14 +298,6 @@ class CommandPong : public ServerOnlyServerCommand<CommandPong>
 	RouteDescriptor GetRouting(User* user, const std::vector<std::string>& parameters) { return ROUTE_UNICAST(parameters[0]); }
 };
 
-class CommandPush : public ServerCommand
-{
- public:
-	CommandPush(Module* Creator) : ServerCommand(Creator, "PUSH", 2) { }
-	CmdResult Handle(User* user, std::vector<std::string>& parameters);
-	RouteDescriptor GetRouting(User* user, const std::vector<std::string>& parameters) { return ROUTE_UNICAST(parameters[0]); }
-};
-
 class CommandSave : public ServerCommand
 {
  public:
@@ -369,6 +362,20 @@ class CommandSInfo : public ServerOnlyServerCommand<CommandSInfo>
 	};
 };
 
+class CommandNum : public ServerOnlyServerCommand<CommandNum>
+{
+ public:
+	CommandNum(Module* Creator) : ServerOnlyServerCommand<CommandNum>(Creator, "NUM", 3) { }
+	CmdResult HandleServer(TreeServer* server, std::vector<std::string>& parameters);
+	RouteDescriptor GetRouting(User* user, const std::vector<std::string>& parameters);
+
+	class Builder : public CmdBuilder
+	{
+	 public:
+		Builder(SpanningTree::RemoteUser* target, const Numeric::Numeric& numeric);
+	};
+};
+
 class SpanningTreeCommands
 {
  public:
@@ -394,12 +401,12 @@ class SpanningTreeCommands
 	CommandNick nick;
 	CommandPing ping;
 	CommandPong pong;
-	CommandPush push;
 	CommandSave save;
 	CommandServer server;
 	CommandSQuit squit;
 	CommandSNONotice snonotice;
 	CommandEndBurst endburst;
 	CommandSInfo sinfo;
+	CommandNum num;
 	SpanningTreeCommands(ModuleSpanningTree* module);
 };

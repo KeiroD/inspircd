@@ -25,6 +25,7 @@
 #include "socket.h"
 #include "xline.h"
 #include "iohook.h"
+#include "modules/spanningtree.h"
 
 #include "resolvers.h"
 #include "main.h"
@@ -50,9 +51,9 @@ SpanningTreeCommands::SpanningTreeCommands(ModuleSpanningTree* module)
 	uid(module), opertype(module), fjoin(module), ijoin(module), resync(module),
 	fmode(module), ftopic(module), fhost(module), fident(module), fname(module),
 	away(module), addline(module), delline(module), encap(module), idle(module),
-	nick(module), ping(module), pong(module), push(module), save(module),
+	nick(module), ping(module), pong(module), save(module),
 	server(module), squit(module), snonotice(module),
-	endburst(module), sinfo(module)
+	endburst(module), sinfo(module), num(module)
 {
 }
 
@@ -612,6 +613,21 @@ void ModuleSpanningTree::OnUnloadModule(Module* mod)
 	if (!Utils)
 		return;
 	ServerInstance->PI->SendMetaData("modules", "-" + mod->ModuleSourceFile);
+
+	if (mod == this)
+	{
+		// We are being unloaded, inform modules about all servers splitting which cannot be done later when the servers are actually disconnected
+		const server_hash& servers = Utils->serverlist;
+		for (server_hash::const_iterator i = servers.begin(); i != servers.end(); ++i)
+		{
+			TreeServer* server = i->second;
+			if (!server->IsRoot())
+				FOREACH_MOD_CUSTOM(GetEventProvider(), SpanningTreeEventListener, OnServerSplit, (server));
+		}
+		return;
+	}
+
+	// Some other module is being unloaded. If it provides an IOHook we use, we must close that server connection now.
 
 restart:
 	// Close all connections which use an IO hook provided by this module

@@ -1,8 +1,7 @@
 /*
  * InspIRCd -- Internet Relay Chat Daemon
  *
- *   Copyright (C) 2009-2010 Daniel De Graaf <danieldg@inspircd.org>
- *   Copyright (C) 2007 Robin Burchell <robin+git@viroteck.net>
+ *   Copyright (C) 2016 Attila Molnar <attilamolnar@hush.com>
  *
  * This file is part of InspIRCd.  InspIRCd is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General Public
@@ -19,20 +18,16 @@
 
 
 #include "inspircd.h"
-#include "core_info.h"
 
-CommandTime::CommandTime(Module* parent)
-	: ServerTargetCommand(parent, "TIME")
+#include "main.h"
+#include "remoteuser.h"
+
+SpanningTree::RemoteUser::RemoteUser(const std::string& uid, Server* srv)
+	: ::RemoteUser(uid, srv)
 {
-	syntax = "[<servername>]";
 }
 
-CmdResult CommandTime::Handle (const std::vector<std::string>& parameters, User *user)
+void SpanningTree::RemoteUser::WriteRemoteNumeric(const Numeric::Numeric& numeric)
 {
-	if (parameters.size() > 0 && parameters[0] != ServerInstance->Config->ServerName)
-		return CMD_SUCCESS;
-
-	user->WriteRemoteNumeric(RPL_TIME, ServerInstance->Config->ServerName, InspIRCd::TimeString(ServerInstance->Time()));
-
-	return CMD_SUCCESS;
+	CommandNum::Builder(this, numeric).Unicast(this);
 }

@@ -23,7 +23,7 @@
 #include "core_info.h"
 
 CommandModules::CommandModules(Module* parent)
-	: Command(parent, "MODULES", 0, 0)
+	: ServerTargetCommand(parent, "MODULES")
 {
 	Penalty = 4;
 	syntax = "[<servername>]";
@@ -64,7 +64,7 @@ CmdResult CommandModules::Handle (const std::vector<std::string>& parameters, Us
 				if (!(V.Flags & mult))
 					flags[pos] = '-';
 
-#ifdef PURE_STATIC
+#ifdef INSPIRCD_STATIC
 			user->WriteRemoteNumeric(702, InspIRCd::Format("%s %s :%s", m->ModuleSourceFile.c_str(), flags.c_str(), V.description.c_str()));
 #else
 			std::string srcrev = m->ModuleDLLManager->GetVersion();
@@ -79,11 +79,4 @@ CmdResult CommandModules::Handle (const std::vector<std::string>& parameters, Us
 	user->WriteRemoteNumeric(703, "End of MODULES list");
 
 	return CMD_SUCCESS;
-}
-
-RouteDescriptor CommandModules::GetRouting(User* user, const std::vector<std::string>& parameters)
-{
-	if (parameters.size() >= 1)
-		return ROUTE_UNICAST(parameters[0]);
-	return ROUTE_LOCALONLY;
 }

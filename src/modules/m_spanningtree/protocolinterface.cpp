@@ -102,19 +102,9 @@ void SpanningTreeProtocolInterface::Server::SendMetaData(const std::string& key,
 	sock->WriteLine(CommandMetadata::Builder(key, data));
 }
 
-void SpanningTreeProtocolInterface::SendTopic(Channel* channel, std::string &topic)
-{
-	CommandFTopic::Builder(ServerInstance->FakeClient, channel).Broadcast();
-}
-
 void SpanningTreeProtocolInterface::SendSNONotice(char snomask, const std::string &text)
 {
 	CmdBuilder("SNONOTICE").push(snomask).push_last(text).Broadcast();
-}
-
-void SpanningTreeProtocolInterface::PushToClient(User* target, const std::string &rawline)
-{
-	CmdBuilder("PUSH").push(target->uuid).push_last(rawline).Unicast(target);
 }
 
 void SpanningTreeProtocolInterface::SendMessage(Channel* target, char status, const std::string& text, MessageType msgtype)

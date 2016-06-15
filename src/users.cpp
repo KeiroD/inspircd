@@ -811,7 +811,8 @@ void User::WriteNumeric(const Numeric::Numeric& numeric)
 	if (MOD_RESULT == MOD_RES_DENY)
 		return;
 
-	this->Write(BuildNumeric(ServerInstance->Config->ServerName, this, numeric.GetNumeric(), numeric.GetParams()));
+	const std::string& servername = (numeric.GetServer() ? numeric.GetServer()->GetName() : ServerInstance->Config->ServerName);
+	this->Write(BuildNumeric(servername, this, numeric.GetNumeric(), numeric.GetParams()));
 }
 
 void User::WriteFrom(User *user, const std::string &text)
@@ -926,31 +927,9 @@ void User::ForEachNeighbor(ForEachNeighborHandler& handler, bool include_self)
 	}
 }
 
-void LocalUser::SendText(const std::string& line)
-{
-	Write(line);
-}
-
-void RemoteUser::SendText(const std::string& line)
-{
-	ServerInstance->PI->PushToClient(this, line);
-}
-
-void FakeUser::SendText(const std::string& line)
-{
-}
-
-void User::SendText(const char *text, ...)
-{
-	std::string line;
-	VAFORMAT(line, text, text);
-	SendText(line);
-}
-
 void User::WriteRemoteNumeric(const Numeric::Numeric& numeric)
 {
-	const std::string& servername = (numeric.GetServer() ? numeric.GetServer()->GetName() : ServerInstance->Config->ServerName);
-	SendText(BuildNumeric(servername, this, numeric.GetNumeric(), numeric.GetParams()));
+	WriteNumeric(numeric);
 }
 
 /* return 0 or 1 depending if users u and u2 share one or more common channels

@@ -98,23 +98,11 @@ class CoreExport ProtocolInterface
 	 */
 	virtual void SendMetaData(const std::string& key, const std::string& data) { }
 
-	/** Send a topic change for a channel
-	 * @param channel The channel to change the topic for.
-	 * @param topic The new topic to use for the channel.
-	 */
-	virtual void SendTopic(Channel* channel, std::string &topic) { }
-
 	/** Send a notice to users with a given snomask.
 	 * @param snomask The snomask required for the message to be sent.
 	 * @param text The message to send.
 	 */
 	virtual void SendSNONotice(char snomask, const std::string& text) { }
-
-	/** Send raw data to a remote client.
-	 * @param target The user to push data to.
-	 * @param rawline The raw IRC protocol line to deliver (":me NOTICE you :foo", whatever).
-	 */
-	virtual void PushToClient(User* target, const std::string &rawline) { }
 
 	/** Send a message to a channel.
 	 * @param target The channel to message.

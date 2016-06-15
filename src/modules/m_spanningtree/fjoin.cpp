@@ -70,6 +70,9 @@ CmdResult CommandFJoin::Handle(User* srcuser, std::vector<std::string>& params)
 	 * losing side, so only its own modes get applied. Life is simple for those
 	 * who succeed at internets. :-)
 	 *
+	 * Outside of netbursts, the winning side also resyncs the losing side if it
+	 * detects that the other side recreated the channel.
+	 *
 	 * Syntax:
 	 * :<sid> FJOIN <chan> <TS> <modes> :[<member> [<member> ...]]
 	 * The last parameter is a list consisting of zero or more channel members
@@ -119,6 +122,7 @@ CmdResult CommandFJoin::Handle(User* srcuser, std::vector<std::string>& params)
 	const std::string& channel = params[0];
 	Channel* chan = ServerInstance->FindChan(channel);
 	bool apply_other_sides_modes = true;
+	TreeServer* const sourceserver = TreeServer::Get(srcuser);
 
 	if (!chan)
 	{
@@ -134,6 +138,14 @@ CmdResult CommandFJoin::Handle(User* srcuser, std::vector<std::string>& params)
 			/* If our TS is less than theirs, we dont accept their modes */
 			if (ourTS < TS)
 			{
+				// If the source server isn't bursting then this FJOIN is the result of them recreating the channel with a higher TS.
+				// This happens if the last user on the channel hops and before the PART propagates a user on another server joins. Fix it by doing a resync.
+				// Servers behind us won't react this way because the forwarded FJOIN will have the correct TS.
+				if (!sourceserver->IsBursting())
+				{
+					ServerInstance->Logs->Log(MODNAME, LOG_DEBUG, "Server %s recreated channel %s with higher TS, resyncing", sourceserver->GetName().c_str(), chan->name.c_str());
+					sourceserver->GetSocket()->SyncChannel(chan);
+				}
 				apply_other_sides_modes = false;
 			}
 			else if (ourTS > TS)
@@ -162,8 +174,6 @@ CmdResult CommandFJoin::Handle(User* srcuser, std::vector<std::string>& params)
 		modechangelist.clear();
 	}
 
-	TreeServer* const sourceserver = TreeServer::Get(srcuser);
-
 	// Build a new FJOIN for forwarding. Put the correct TS in it and the current modes of the channel
 	// after applying theirs. If they lost, the prefix modes from their message are not forwarded.
 	FwdFJoinBuilder fwdfjoin(chan, sourceserver);
@@ -178,7 +188,7 @@ CmdResult CommandFJoin::Handle(User* srcuser, std::vector<std::string>& params)
 	}
 
 	fwdfjoin.finalize();
-	fwdfjoin.Forward(sourceserver);
+	fwdfjoin.Forward(sourceserver->GetRoute());
 
 	// Set prefix modes on their users if we lost the FJOIN or had equal TS
 	if (apply_other_sides_modes)
@@ -278,14 +288,9 @@ void CommandFJoin::LowerTS(Channel* chan, time_t TS, const std::string& newname)
 	// Unset all extensions
 	chan->FreeAllExtItems();
 
-	// Clear the topic, if it isn't empty then send a topic change message to local users
-	if (!chan->topic.empty())
-	{
-		chan->topic.clear();
-		chan->WriteChannelWithServ(ServerInstance->Config->ServerName, "TOPIC %s :", chan->name.c_str());
-	}
+	// Clear the topic
+	chan->SetTopic(ServerInstance->FakeClient, std::string(), 0);
 	chan->setby.clear();
-	chan->topicset = 0;
 }
 
 CommandFJoin::Builder::Builder(Channel* chan, TreeServer* source)
