@@ -6,7 +6,7 @@ script:
 
 notifications:
   irc:
-  - "irc.cleverpun.com#irc"
+  - "irc.heimkoma.com#irc"
 
 # blacklist
 branches:
