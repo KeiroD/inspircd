@@ -1,3 +1,10 @@
+# BUILD STATUS FOR MASTER
+![Build Status](https://travis-ci.org/KeiroD/inspircd.svg?branch=master)
+
+# BUILD STATUS FOR INSP20
+![Build Status](https://travis-ci.org/KeiroD/inspircd.svg?branch=insp20)
+
+
 ### Important Notice
 
 The `master` branch contains the latest development version. If you are running
