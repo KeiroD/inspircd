@@ -1,0 +1,22 @@
+before_script:
+  - ./configure --disable-interactive --enablegnutls --enable-epoll --prefix=test --development
+
+script:
+  - make
+
+notifications:
+  irc:
+  - "irc.heimkoma.com#irc"
+
+# blacklist
+branches:
+    - insp10
+    - insp11
+    - insp12
+    - obsolete/insp21
+
+# whitelist
+branches:
+  only:
+    - master
+    - insp20
