@@ -1,9 +1,18 @@
-before_script:
-  - ./configure --disable-interactive --enablegnutls --enable-epoll --prefix=test --development
-
+compiler:
+  - clang
+  - gcc
+dist: trusty
+env:
+  - TEST_BUILD_DYNAMIC=1
+  - TEST_BUILD_STATIC=1
+language: cpp
+notifications:
+  email: false
 script:
-  - make
+  - sh ./tools/travis-ci.sh
+sudo: required
 
+# Remember, Travis needs to be able to connect to the server so if the IRC server's dead, UPDATE the server address!
 notifications:
   irc:
   - "irc.heimkoma.com#irc"
