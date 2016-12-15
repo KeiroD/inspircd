@@ -3,6 +3,7 @@ compiler:
   - gcc
 dist: trusty
 env:
+  - PURE_STATIC=1
   - TEST_BUILD_DYNAMIC=1
   - TEST_BUILD_STATIC=1
 language: cpp
