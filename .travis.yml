@@ -12,6 +12,12 @@ script:
   - sh ./tools/travis-ci.sh
 sudo: required
 
+=======
+before_script:
+  - ./configure --disable-interactive --enablegnutls --enable-epoll --prefix=test --development
+
+script:
+  - make
 # Remember, Travis needs to be able to connect to the server so if the IRC server's dead, UPDATE the server address!
 notifications:
   irc:
