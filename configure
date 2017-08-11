@@ -3,6 +3,7 @@
 #
 # InspIRCd -- Internet Relay Chat Daemon
 #
+#   Copyright (C) 2012-2017 Peter Powell <petpow@saberuk.com>
 #   Copyright (C) 2009-2010 Daniel De Graaf <danieldg@inspircd.org>
 #   Copyright (C) 2007, 2009 Dennis Friis <peavey@inspircd.org>
 #   Copyright (C) 2003, 2006-2008 Craig Edwards <craigedwards@brainbox.cc>
@@ -129,9 +130,9 @@ our $interactive = !(
 my %version = get_version $opt_distribution_label;
 print_format "<|BOLD Configuring InspIRCd $version{FULL} on $^O.|>\n";
 
-our %config;
+my %config;
 if ($interactive) {
-	%config = read_configure_cache();
+	%config = read_config_file(CONFIGURE_CACHE_FILE);
 	run_test CONFIGURE_CACHE_FILE, %config;
 	if (!defined $config{VERSION}) {
 		$config{VERSION} = CONFIGURE_CACHE_VERSION;
@@ -143,50 +144,37 @@ if ($interactive) {
 
 $config{CXX} = find_compiler($config{CXX} // $ENV{CXX});
 unless ($config{CXX}) {
-	print "A suitable C++ compiler could not be detected on your system!\n";
-	print "Set the CXX environment variable to the compiler binary path if this is incorrect.\n";
-	exit 1;	
+	say 'A suitable C++ compiler could not be detected on your system!';
+	unless ($interactive) {
+		say 'Set the CXX environment variable to the path to a C++ compiler binary if this is incorrect.';
+		exit 1;
+	}
+	until ($config{CXX}) {
+		my $compiler_path = prompt_string 1, 'Please enter the path to a C++ compiler binary:', 'c++';
+		$config{CXX} = find_compiler $compiler_path;
+	}
 }
 my %compiler = get_compiler_info($config{CXX});
 
-$config{HAS_CLOCK_GETTIME} = run_test 'clock_gettime()', test_file($config{CXX}, 'clock_gettime.cpp', '-lrt');
+$config{HAS_CLOCK_GETTIME} = run_test 'clock_gettime()', test_file($config{CXX}, 'clock_gettime.cpp', $^O eq 'darwin' ? undef : '-lrt');
 $config{HAS_EVENTFD} = run_test 'eventfd()', test_file($config{CXX}, 'eventfd.cpp');
 
-if ($config{HAS_EPOLL} = run_test 'epoll', test_header($config{CXX}, 'sys/epoll.h')) {
-	$config{SOCKETENGINE} //= 'epoll';
-}
-
-if ($config{HAS_KQUEUE} = run_test 'kqueue', test_file($config{CXX}, 'kqueue.cpp')) {
-	$config{SOCKETENGINE} //= 'kqueue';
-}
-
-if ($config{HAS_PORTS} = run_test 'Solaris IOCP', test_header($config{CXX}, 'port.h')) {
-	$config{SOCKETENGINE} //= 'ports';
-}
-
-if ($config{HAS_POLL} = run_test 'poll', test_header($config{CXX}, 'poll.h')) {
-	$config{SOCKETENGINE} //= 'poll';
-}
-
-# Select is available on all platforms
-$config{HAS_SELECT} = 1;
-$config{SOCKETENGINE} //= 'select';
+my @socketengines;
+push @socketengines, 'epoll'  if run_test 'epoll', test_header $config{CXX}, 'sys/epoll.h';
+push @socketengines, 'kqueue' if run_test 'kqueue', test_file $config{CXX}, 'kqueue.cpp';
+push @socketengines, 'ports'  if run_test 'Solaris IOCP', test_header $config{CXX}, 'port.h';
+push @socketengines, 'poll'   if run_test 'poll', test_header $config{CXX}, 'poll.h';
+push @socketengines, 'select';
 
 if (defined $opt_socketengine) {
-	my $cfgkey = 'HAS_' . uc $opt_socketengine;
-	if ($config{$cfgkey} && -f "src/socketengines/socketengine_$opt_socketengine.cpp") {
-		$config{SOCKETENGINE} = $opt_socketengine;
-	} else {
-		print "Unable to use a socket engine which is not supported on this platform ($opt_socketengine)!\n";
-		print "Available socket engines are:";
-		foreach (<src/socketengines/socketengine_*.cpp>) {
-			s/src\/socketengines\/socketengine_(\w+)\.cpp/$1/;
-			print " $1" if $config{'HAS_' . uc $1};
-		}
-		print "\n";	
-		exit 1;
+	unless (grep { $_ eq $opt_socketengine } @socketengines) {
+		my $reason = -f "src/socketengines/socketengine_$opt_socketengine.cpp" ? 'is not available on this platform' : 'does not exist';
+		print_error "The socket engine you requested ($opt_socketengine) $reason!",
+			'Available socket engines are:',
+			map { "  * $_" } @socketengines;
 	}
 }
+$config{SOCKETENGINE} = $opt_socketengine // $socketengines[0];
 
 if (defined $opt_system) {
 	$config{BASE_DIR}   = $opt_prefix     // '/var/lib/inspircd';
@@ -232,6 +220,15 @@ $config{UID}  = $user[2];
 
 # Clear the screen.
 system 'tput', 'clear' if $interactive;
+
+# Warn the user about clock drifting when running on OpenVZ.
+if (-e '/proc/user_beancounters' || -e '/proc/vz/vzaquota') {
+	print_warning <<'EOW';
+You are building InspIRCd inside of an an OpenVZ container. If you
+plan to use InspIRCd in this container then you should make sure that NTP is
+configured on the Hardware Node. Failure to do so may result in clock drifting!
+EOW
+}
 
 # Check that the user actually wants this version.
 if ($version{LABEL} ne 'release') {

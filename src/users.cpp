@@ -33,34 +33,34 @@ bool User::IsNoticeMaskSet(unsigned char sm)
 	return (snomasks[sm-65]);
 }
 
-bool User::IsModeSet(unsigned char m)
+bool User::IsModeSet(unsigned char m) const
 {
 	ModeHandler* mh = ServerInstance->Modes->FindMode(m, MODETYPE_USER);
 	return (mh && modes[mh->GetId()]);
 }
 
-const char* User::FormatModes(bool showparameters)
+std::string User::GetModeLetters(bool includeparams) const
 {
-	static std::string data;
+	std::string ret(1, '+');
 	std::string params;
-	data.clear();
 
-	for (unsigned char n = 0; n < 64; n++)
+	for (unsigned char i = 'A'; i < 'z'; i++)
 	{
-		ModeHandler* mh = ServerInstance->Modes->FindMode(n + 65, MODETYPE_USER);
-		if (mh && IsModeSet(mh))
+		const ModeHandler* const mh = ServerInstance->Modes.FindMode(i, MODETYPE_USER);
+		if ((!mh) || (!IsModeSet(mh)))
+			continue;
+
+		ret.push_back(mh->GetModeChar());
+		if ((includeparams) && (mh->NeedsParam(true)))
 		{
-			data.push_back(n + 65);
-			if (showparameters && mh->NeedsParam(true))
-			{
-				std::string p = mh->GetUserParameter(this);
-				if (p.length())
-					params.append(" ").append(p);
-			}
+			const std::string val = mh->GetUserParameter(this);
+			if (!val.empty())
+				params.append(1, ' ').append(val);
 		}
 	}
-	data += params;
-	return data.c_str();
+
+	ret += params;
+	return ret;
 }
 
 User::User(const std::string& uid, Server* srv, int type)
@@ -588,6 +588,7 @@ void LocalUser::FullConnect()
 void User::InvalidateCache()
 {
 	/* Invalidate cache */
+	cachedip.clear();
 	cached_fullhost.clear();
 	cached_hostip.clear();
 	cached_makehost.clear();
@@ -627,11 +628,8 @@ bool User::ChangeNick(const std::string& newnick, time_t newts)
 			if (InUse->registered != REG_ALL)
 			{
 				/* force the camper to their UUID, and ask them to re-send a NICK. */
-				InUse->WriteFrom(InUse, "NICK %s", InUse->uuid.c_str());
-				InUse->WriteNumeric(ERR_NICKNAMEINUSE, InUse->nick, "Nickname overruled.");
-
-				InUse->registered &= ~REG_NICK;
-				InUse->ChangeNick(InUse->uuid);
+				LocalUser* const localuser = static_cast<LocalUser*>(InUse);
+				localuser->OverruleNick();
 			}
 			else
 			{
@@ -657,6 +655,16 @@ bool User::ChangeNick(const std::string& newnick, time_t newts)
 		FOREACH_MOD(OnUserPostNick, (this,oldnick));
 
 	return true;
+}
+
+void LocalUser::OverruleNick()
+{
+	this->WriteFrom(this, "NICK %s", this->uuid.c_str());
+	this->WriteNumeric(ERR_NICKNAMEINUSE, this->nick, "Nickname overruled.");
+
+	// Clear the bit before calling ChangeNick() to make it NOT run the OnUserPostNick() hook
+	this->registered &= ~REG_NICK;
+	this->ChangeNick(this->uuid);
 }
 
 int LocalUser::GetServerPort()
@@ -702,8 +710,7 @@ irc::sockets::cidr_mask User::GetCIDRMask()
 
 bool User::SetClientIP(const char* sip, bool recheck_eline)
 {
-	cachedip.clear();
-	cached_hostip.clear();
+	this->InvalidateCache();
 	return irc::sockets::aptosa(sip, 0, client_sa);
 }
 

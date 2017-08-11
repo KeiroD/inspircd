@@ -46,7 +46,7 @@ ServerLimits::ServerLimits(ConfigTag* tag)
 
 static ConfigTag* CreateEmptyTag()
 {
-	std::vector<KeyVal>* items;
+	ConfigItems* items;
 	return ConfigTag::create("empty", "<auto>", 0, items);
 }
 
@@ -220,9 +220,9 @@ void ServerConfig::CrossCheckConnectBlocks(ServerConfig* current)
 	if (blk_count == 0)
 	{
 		// No connect blocks found; make a trivial default block
-		std::vector<KeyVal>* items;
+		ConfigItems* items;
 		ConfigTag* tag = ConfigTag::create("connect", "<auto>", 0, items);
-		items->push_back(std::make_pair("allow", "*"));
+		(*items)["allow"] = "*";
 		config_data.insert(std::make_pair("connect", tag));
 		blk_count = 1;
 	}
@@ -383,21 +383,23 @@ void ServerConfig::Fill()
 {
 	ConfigTag* options = ConfValue("options");
 	ConfigTag* security = ConfValue("security");
+	ConfigTag* server = ConfValue("server");
 	if (sid.empty())
 	{
-		ServerName = ConfValue("server")->getString("name", "irc.example.com");
+		ServerName = server->getString("name", "irc.example.com");
 		ValidHost(ServerName, "<server:name>");
 
-		sid = ConfValue("server")->getString("id");
+		sid = server->getString("id");
 		if (!sid.empty() && !InspIRCd::IsSID(sid))
 			throw CoreException(sid + " is not a valid server ID. A server ID must be 3 characters long, with the first character a digit and the next two characters a digit or letter.");
 	}
 	else
 	{
-		if (ServerName != ConfValue("server")->getString("name"))
+		std::string name = server->getString("name");
+		if (!name.empty() && name != ServerName)
 			throw CoreException("You must restart to change the server name");
 
-		std::string nsid = ConfValue("server")->getString("id");
+		std::string nsid = server->getString("id");
 		if (!nsid.empty() && nsid != sid)
 			throw CoreException("You must restart to change the server id");
 	}
@@ -405,8 +407,8 @@ void ServerConfig::Fill()
 	CCOnConnect = ConfValue("performance")->getBool("clonesonconnect", true);
 	MaxConn = ConfValue("performance")->getInt("somaxconn", SOMAXCONN);
 	XLineMessage = options->getString("xlinemessage", options->getString("moronbanner", "You're banned!"));
-	ServerDesc = ConfValue("server")->getString("description", "Configure Me");
-	Network = ConfValue("server")->getString("network", "Network");
+	ServerDesc = server->getString("description", "Configure Me");
+	Network = server->getString("network", "Network");
 	NetBufferSize = ConfValue("performance")->getInt("netbuffersize", 10240, 1024, 65534);
 	dns_timeout = ConfValue("dns")->getInt("timeout", 5);
 	DisabledCommands = ConfValue("disabled")->getString("commands", "");
@@ -568,7 +570,7 @@ void ServerConfig::Apply(ServerConfig* old, const std::string &useruid)
 	}
 	catch (CoreException &ce)
 	{
-		errstr << ce.GetReason();
+		errstr << ce.GetReason() << std::endl;
 	}
 
 	// Check errors before dealing with failed binds, since continuing on failed bind is wanted in some circumstances.

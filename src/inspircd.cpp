@@ -230,8 +230,7 @@ InspIRCd::InspIRCd(int argc, char** argv) :
 	 GenRandom(&HandleGenRandom),
 	 IsChannel(&HandleIsChannel),
 	 IsNick(&HandleIsNick),
-	 IsIdent(&HandleIsIdent),
-	 OnCheckExemption(&HandleOnCheckExemption)
+	 IsIdent(&HandleIsIdent)
 {
 	ServerInstance = this;
 
@@ -343,7 +342,7 @@ InspIRCd::InspIRCd(int argc, char** argv) :
 
 	if (do_debug)
 	{
-		FileWriter* fw = new FileWriter(stdout);
+		FileWriter* fw = new FileWriter(stdout, 1);
 		FileLogStream* fls = new FileLogStream(LOG_RAWIO, fw);
 		Logs->AddLogTypes("*", fls, true);
 	}

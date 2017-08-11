@@ -34,7 +34,7 @@ class CommandOjoin : public SplitCommand
 		: SplitCommand(parent, "OJOIN", 1)
 		, npmh(&mode)
 	{
-		flags_needed = 'o'; Penalty = 0; syntax = "<channel>";
+		flags_needed = 'o'; syntax = "<channel>";
 		active = false;
 	}
 
@@ -150,7 +150,7 @@ class ModuleOjoin : public Module
 		return MOD_RES_DENY;
 	}
 
-	void Prioritize()
+	void Prioritize() CXX11_OVERRIDE
 	{
 		ServerInstance->Modules->SetPriority(this, I_OnUserPreJoin, PRIORITY_FIRST);
 	}

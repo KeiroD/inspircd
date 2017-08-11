@@ -154,7 +154,7 @@ class Packet : public Query
 		record.ttl = (input[pos] << 24) | (input[pos + 1] << 16) | (input[pos + 2] << 8) | input[pos + 3];
 		pos += 4;
 
-		//record.rdlength = input[pos] << 8 | input[pos + 1];
+		uint16_t rdlength = input[pos] << 8 | input[pos + 1];
 		pos += 2;
 
 		switch (record.type)
@@ -197,6 +197,19 @@ class Packet : public Query
 				record.rdata = this->UnpackName(input, input_size, pos);
 				if (!IsValidName(record.rdata))
 					throw Exception("Invalid name"); // XXX: Causes the request to time out
+
+				break;
+			}
+			case QUERY_TXT:
+			{
+				if (pos + rdlength > input_size)
+					throw Exception("Unable to unpack txt resource record");
+
+				record.rdata = std::string(reinterpret_cast<const char *>(input + pos), rdlength);
+				pos += rdlength;
+
+				if (record.rdata.find_first_of("\r\n\0", 0, 3) != std::string::npos)
+					throw Exception("Invalid character in txt record");
 
 				break;
 			}
@@ -429,7 +442,7 @@ class MyManager : public Manager, public Timer, public EventHandler
 		}
 	}
 
-	void Process(DNS::Request* req)
+	void Process(DNS::Request* req) CXX11_OVERRIDE
 	{
 		if ((unloading) || (req->creator->dying))
 			throw Exception("Module is being unloaded");
@@ -496,13 +509,13 @@ class MyManager : public Manager, public Timer, public EventHandler
 		ServerInstance->Timers.AddTimer(req);
 	}
 
-	void RemoveRequest(DNS::Request* req)
+	void RemoveRequest(DNS::Request* req) CXX11_OVERRIDE
 	{
 		if (requests[req->id] == req)
 			requests[req->id] = NULL;
 	}
 
-	std::string GetErrorStr(Error e)
+	std::string GetErrorStr(Error e) CXX11_OVERRIDE
 	{
 		switch (e)
 		{
@@ -651,7 +664,7 @@ class MyManager : public Manager, public Timer, public EventHandler
 		delete request;
 	}
 
-	bool Tick(time_t now)
+	bool Tick(time_t now) CXX11_OVERRIDE
 	{
 		ServerInstance->Logs->Log(MODNAME, LOG_DEBUG, "cache: purging DNS cache");
 
@@ -813,7 +826,7 @@ class ModuleDNS : public Module
 			this->manager.Rehash(DNSServer, SourceIP, SourcePort);
 	}
 
-	void OnUnloadModule(Module* mod)
+	void OnUnloadModule(Module* mod) CXX11_OVERRIDE
 	{
 		for (unsigned int i = 0; i <= MAX_REQUEST_ID; ++i)
 		{
@@ -832,7 +845,7 @@ class ModuleDNS : public Module
 		}
 	}
 
-	Version GetVersion()
+	Version GetVersion() CXX11_OVERRIDE
 	{
 		return Version("DNS support", VF_CORE|VF_VENDOR);
 	}

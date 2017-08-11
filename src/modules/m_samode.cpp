@@ -31,7 +31,7 @@ class CommandSamode : public Command
 	CommandSamode(Module* Creator) : Command(Creator,"SAMODE", 2)
 	{
 		allow_empty_last_param = false;
-		flags_needed = 'o'; Penalty = 0; syntax = "<target> <modes> {<mode-parameters>}";
+		flags_needed = 'o'; syntax = "<target> <modes> {<mode-parameters>}";
 		active = false;
 	}
 
@@ -96,7 +96,7 @@ class ModuleSaMode : public Module
 		return MOD_RES_PASSTHRU;
 	}
 
-	void Prioritize()
+	void Prioritize() CXX11_OVERRIDE
 	{
 		Module *override = ServerInstance->Modules->Find("m_override.so");
 		ServerInstance->Modules->SetPriority(this, I_OnPreMode, PRIORITY_BEFORE, override);

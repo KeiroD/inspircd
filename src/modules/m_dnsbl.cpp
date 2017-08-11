@@ -70,6 +70,14 @@ class DNSBLResolver : public DNS::Request
 		if (!ans_record)
 			return;
 
+		// All replies should be in 127.0.0.0/8
+		if (ans_record->rdata.compare(0, 4, "127.") != 0)
+		{
+			ServerInstance->SNO->WriteGlobalSno('a', "DNSBL: %s returned address outside of acceptable subnet 127.0.0.0/8: %s", ConfEntry->domain.c_str(), ans_record->rdata.c_str());
+			ConfEntry->stats_misses++;
+			return;
+		}
+
 		int i = countExt.get(them);
 		if (i)
 			countExt.set(them, i - 1);
@@ -80,7 +88,7 @@ class DNSBLResolver : public DNS::Request
 		bool match = false;
 		in_addr resultip;
 
-		inet_aton(ans_record->rdata.c_str(), &resultip);
+		inet_pton(AF_INET, ans_record->rdata.c_str(), &resultip);
 
 		switch (ConfEntry->type)
 		{
@@ -175,7 +183,7 @@ class DNSBLResolver : public DNS::Request
 					if (ServerInstance->XLines->AddLine(zl,NULL))
 					{
 						std::string timestr = InspIRCd::TimeString(zl->expiry);
-						ServerInstance->SNO->WriteGlobalSno('x',"Z:line added due to DNSBL match on *@%s to expire on %s: %s",
+						ServerInstance->SNO->WriteGlobalSno('x',"Z:line added due to DNSBL match on %s to expire on %s: %s",
 							them->GetIPString().c_str(), timestr.c_str(), reason.c_str());
 						ServerInstance->XLines->ApplyLines();
 					}

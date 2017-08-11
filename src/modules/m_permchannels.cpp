@@ -244,6 +244,10 @@ public:
 						mode->OnModeChange(ServerInstance->FakeClient, ServerInstance->FakeClient, c, par, true);
 					}
 				}
+
+				// We always apply the permchannels mode to permanent channels.
+				par.clear();
+				p.OnModeChange(ServerInstance->FakeClient, ServerInstance->FakeClient, c, par, true);
 			}
 		}
 	}
@@ -269,7 +273,7 @@ public:
 		dirty = false;
 	}
 
-	void Prioritize()
+	void Prioritize() CXX11_OVERRIDE
 	{
 		// XXX: Load the DB here because the order in which modules are init()ed at boot is
 		// alphabetical, this means we must wait until all modules have done their init()

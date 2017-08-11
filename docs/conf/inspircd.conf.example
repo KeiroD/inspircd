@@ -287,6 +287,10 @@
          # useident: Defines if users in this class MUST respond to a ident query or not.
          useident="no"
 
+         # webirc: Restricts usage of this class to the specified WebIRC gateway.
+         # This setting only has effect when the cgiirc module is loaded.
+         #webirc="name"
+
          # limit: How many users are allowed in this class
          limit="5000"
 
@@ -837,6 +841,11 @@
 #  - CONNECTCLASS - Connection class debug messages
 #  - USERINPUT
 #  - USEROUTPUT
+#
+# If your server is producing a high levels of log messages you can also set the
+# flush="[positive number]" attribute to specify how many log messages should be
+# buffered before flushing to disk. You should probably not specify this unless
+# you are having problems.
 #
 # The following log tag is highly default and uncustomised. It is recommended you
 # sort out your own log tags. This is just here so you get some output.

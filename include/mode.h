@@ -166,7 +166,7 @@ class CoreExport ModeHandler : public ServiceProvider
 	 * @param mclass The object type of this mode handler, one of ModeHandler::Class
 	 */
 	ModeHandler(Module* me, const std::string& name, char modeletter, ParamSpec params, ModeType type, Class mclass = MC_OTHER);
-	virtual CullResult cull();
+	virtual CullResult cull() CXX11_OVERRIDE;
 	virtual ~ModeHandler();
 
 	/** Register this object in the ModeParser
@@ -241,7 +241,7 @@ class CoreExport ModeHandler : public ServiceProvider
 
 	/** For user modes, return the current parameter, if any
 	 */
-	virtual std::string GetUserParameter(User* useor);
+	virtual std::string GetUserParameter(const User* user) const;
 
 	/**
 	 * Called when a channel mode change access check for your mode occurs.

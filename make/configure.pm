@@ -1,7 +1,7 @@
 #
 # InspIRCd -- Internet Relay Chat Daemon
 #
-#   Copyright (C) 2012-2014 Peter Powell <petpow@saberuk.com>
+#   Copyright (C) 2012-2017 Peter Powell <petpow@saberuk.com>
 #   Copyright (C) 2008 Robin Burchell <robin+git@viroteck.net>
 #   Copyright (C) 2007-2008 Craig Edwards <craigedwards@brainbox.cc>
 #   Copyright (C) 2008 Thomas Stagner <aquanight@inspircd.org>
@@ -42,6 +42,7 @@ use make::console;
 use constant CONFIGURE_DIRECTORY     => '.configure';
 use constant CONFIGURE_CACHE_FILE    => catfile(CONFIGURE_DIRECTORY, 'cache.cfg');
 use constant CONFIGURE_CACHE_VERSION => '1';
+use constant CONFIGURE_ERROR_PIPE    => $ENV{INSPIRCD_VERBOSE} ? '' : '1>/dev/null 2>/dev/null';
 
 our @EXPORT = qw(CONFIGURE_CACHE_FILE
                  CONFIGURE_CACHE_VERSION
@@ -51,7 +52,6 @@ our @EXPORT = qw(CONFIGURE_CACHE_FILE
                  run_test
                  test_file
                  test_header
-                 read_configure_cache
                  write_configure_cache
                  get_compiler_info
                  find_compiler
@@ -97,7 +97,7 @@ sub __get_template_settings($$$) {
 
 sub __test_compiler($) {
 	my $compiler = shift;
-	return 0 unless run_test("`$compiler`", !system "$compiler -v >/dev/null 2>&1");
+	return 0 unless run_test("`$compiler`", !system "$compiler -v ${\CONFIGURE_ERROR_PIPE}");
 	return 0 unless run_test("`$compiler`", test_file($compiler, 'compiler.cpp', '-fno-rtti'), 'compatible');
 	return 1;
 }
@@ -179,7 +179,7 @@ EOH
 sub cmd_update {
 	print_error "You have not run $0 before. Please do this before trying to update the generated files." unless -f CONFIGURE_CACHE_FILE;
 	say 'Updating...';
-	my %config = read_configure_cache();
+	my %config = read_config_file(CONFIGURE_CACHE_FILE);
 	my %compiler = get_compiler_info($config{CXX});
 	my %version = get_version $config{DISTRIBUTION};
 	parse_templates(\%config, \%compiler, \%version);
@@ -199,8 +199,8 @@ sub test_file($$;$) {
 	my ($compiler, $file, $args) = @_;
 	my $status = 0;
 	$args //= '';
-	$status ||= system "$compiler -o __test_$file make/test/$file $args >/dev/null 2>&1";
-	$status ||= system "./__test_$file >/dev/null 2>&1";
+	$status ||= system "$compiler -o __test_$file make/test/$file $args ${\CONFIGURE_ERROR_PIPE}";
+	$status ||= system "./__test_$file ${\CONFIGURE_ERROR_PIPE}";
 	unlink "./__test_$file";
 	return !$status;
 }
@@ -208,22 +208,10 @@ sub test_file($$;$) {
 sub test_header($$;$) {
 	my ($compiler, $header, $args) = @_;
 	$args //= '';
-	open(COMPILER, "| $compiler -E - $args >/dev/null 2>&1") or return 0;
-	print COMPILER "#include <$header>";
-	close(COMPILER);
+	open(my $fh, "| $compiler -E - $args ${\CONFIGURE_ERROR_PIPE}") or return 0;
+	print $fh "#include <$header>";
+	close $fh;
 	return !$?;
-}
-
-sub read_configure_cache {
-	my %config;
-	open(CACHE, CONFIGURE_CACHE_FILE) or return %config;
-	while (my $line = <CACHE>) {
-		next if $line =~ /^\s*($|\#)/;
-		my ($key, $value) = ($line =~ /^(\S+)(?:\s(.*))?$/);
-		$config{$key} = $value;
-	}
-	close(CACHE);
-	return %config;
 }
 
 sub write_configure_cache(%) {
@@ -234,29 +222,20 @@ sub write_configure_cache(%) {
 
 	print_format "Writing <|GREEN ${\CONFIGURE_CACHE_FILE}|> ...\n";
 	my %config = @_;
-	open(CACHE, '>', CONFIGURE_CACHE_FILE) or print_error "unable to write ${\CONFIGURE_CACHE_FILE}: $!";
-	while (my ($key, $value) = each %config) {
-		$value //= '';
-		say CACHE "$key $value";
-	}
-	close(CACHE);
+	write_config_file CONFIGURE_CACHE_FILE, %config;
 }
 
 sub get_compiler_info($) {
 	my $binary = shift;
-	my $version = `$binary -v 2>&1`;
-	if ($version =~ /Apple\sLLVM\sversion\s(\d+\.\d+)/i) {
-		# Apple version their LLVM releases slightly differently to the mainline LLVM.
-		# See https://trac.macports.org/wiki/XcodeVersionInfo for more information.
-		return (NAME => 'AppleClang', VERSION => $1);
-	} elsif ($version =~ /clang\sversion\s(\d+\.\d+)/i) {
-		return (NAME => 'Clang', VERSION => $1);
-	} elsif ($version =~ /gcc\sversion\s(\d+\.\d+)/i) {
-		return (NAME => 'GCC', VERSION => $1);
-	} elsif ($version =~ /(?:icc|icpc)\sversion\s(\d+\.\d+).\d+\s\(gcc\sversion\s(\d+\.\d+).\d+/i) {
-		return (NAME => 'ICC', VERSION => $1);
+	my %info = (NAME => 'Unknown', VERSION => '0.0');
+	return %info if system "$binary -o __compiler_info make/test/compiler_info.cpp ${\CONFIGURE_ERROR_PIPE}";
+	open(my $fh, '-|', './__compiler_info 2>/dev/null');
+	while (my $line = <$fh>) {
+		$info{$1} = $2 if $line =~ /^([A-Z]+)\s(.+)$/;
 	}
-	return (NAME => $binary, VERSION => '0.0');
+	close $fh;
+	unlink './__compiler_info';
+	return %info;
 }
 
 sub find_compiler {
@@ -278,11 +257,11 @@ sub parse_templates($$$) {
 	# Iterate through files in make/template.
 	foreach (<make/template/*>) {
 		print_format "Parsing <|GREEN $_|> ...\n";
-		open(TEMPLATE, $_) or print_error "unable to read $_: $!";
-		my (@lines, $mode, @platforms, %targets);
+		open(my $fh, $_) or print_error "unable to read $_: $!";
+		my (@lines, $mode, @platforms, @targets);
 
 		# First pass: parse template variables and directives.
-		while (my $line = <TEMPLATE>) {
+		while (my $line = <$fh>) {
 			chomp $line;
 
 			# Does this line match a variable?
@@ -309,11 +288,7 @@ sub parse_templates($$$) {
 				} elsif ($1 eq 'platform') {
 					push @platforms, $2;
 				} elsif ($1 eq 'target') {
-					if ($2 =~ /(\w+)\s(.+)/) {
-						$targets{$1} = $2;
-					} else {
-						$targets{DEFAULT} = $2;
-					}
+					push @targets, $2
 				} else {
 					print_warning "unknown template command '$1' in $_!";
 					push @lines, $line;
@@ -322,92 +297,18 @@ sub parse_templates($$$) {
 			}
 			push @lines, $line;
 		}
-		close(TEMPLATE);
+		close $fh;
 
 		# Only proceed if this file should be templated on this platform.
 		if ($#platforms < 0 || grep { $_ eq $^O } @platforms) {
 
 			# Add a default target if the template has not defined one.
-			unless (scalar keys %targets) {
-				$targets{DEFAULT} = catfile(CONFIGURE_DIRECTORY, basename $_);
+			unless (@targets) {
+				push @targets, catfile(CONFIGURE_DIRECTORY, basename $_);
 			}
 
-			# Second pass: parse makefile junk and write files.
-			while (my ($name, $target) = each %targets) {
-
-				# TODO: when buildtool is done this mess can be removed completely.
-				my @final_lines;
-				foreach my $line (@lines) {
-
-					# Are we parsing a makefile and does this line match a statement?
-					if ($name =~ /(?:BSD|GNU)_MAKE/ && $line =~ /^\s*\@(\w+)(?:\s+(.+))?$/) {
-						my @tokens = split /\s/, $2 if defined $2;
-						if ($1 eq 'DO_EXPORT' && defined $2) {
-							if ($name eq 'BSD_MAKE') {
-								foreach my $variable (@tokens) {
-									push @final_lines, "MAKEENV += $variable='\${$variable}'";
-								}
-							} elsif ($name eq 'GNU_MAKE') {
-								push @final_lines, "export $2";
-							}
-						} elsif ($1 eq 'ELSE') {
-							if ($name eq 'BSD_MAKE') {
-								push @final_lines, ".else";
-							} elsif ($name eq 'GNU_MAKE') {
-								push @final_lines, "else";
-							}
-						} elsif ($1 eq 'ENDIF') {
-							if ($name eq 'BSD_MAKE') {
-								push @final_lines, ".endif";
-							} elsif ($name eq 'GNU_MAKE') {
-								push @final_lines, "endif";
-							}
-						} elsif ($1 eq 'ELSIFEQ' && defined $2) {
-							if ($name eq 'BSD_MAKE') {
-								push @final_lines, ".elif $tokens[0] == $tokens[1]";
-							} elsif ($name eq 'GNU_MAKE') {
-								push @final_lines, "else ifeq ($tokens[0], $tokens[1])";
-							}
-						} elsif ($1 eq 'IFDEF' && defined $2) {
-							if ($name eq 'BSD_MAKE') {
-								push @final_lines, ".if defined($2)";
-							} elsif ($name eq 'GNU_MAKE') {
-								push @final_lines, "ifdef $2";
-							}
-						} elsif ($1 eq 'IFEQ' && defined $2) {
-							if ($name eq 'BSD_MAKE') {
-								push @final_lines, ".if $tokens[0] == $tokens[1]";
-							} elsif ($name eq 'GNU_MAKE') {
-								push @final_lines, "ifeq ($tokens[0],$tokens[1])";
-							}
-						} elsif ($1 eq 'IFNEQ' && defined $2) {
-							if ($name eq 'BSD_MAKE') {
-								push @final_lines, ".if $tokens[0] != $tokens[1]";
-							} elsif ($name eq 'GNU_MAKE') {
-								push @final_lines, "ifneq ($tokens[0],$tokens[1])";
-							}
-						} elsif ($1 eq 'IFNDEF' && defined $2) {
-							if ($name eq 'BSD_MAKE') {
-								push @final_lines, ".if !defined($2)";
-							} elsif ($name eq 'GNU_MAKE') {
-								push @final_lines, "ifndef $2";
-							}
-						} elsif ($1 eq 'TARGET' && defined $2) {
-							if ($tokens[0] eq $name) {
-								push @final_lines, substr($2, length($tokens[0]) + 1);
-							}
-						} elsif ($1 !~ /[A-Z]/) {
-							# HACK: silently ignore if lower case as these are probably make commands.
-							push @final_lines, $line;
-						} else {
-							print_warning "unknown template command '$1' in $_!";
-							push @final_lines, $line;
-						}
-						next;
-					}
-
-					push @final_lines, $line;
-				}
+			# Write the templated files to disk.
+			for my $target (@targets) {
 
 				# Create the directory if it doesn't already exist.
 				my $directory = dirname $target;
@@ -418,11 +319,11 @@ sub parse_templates($$$) {
 
 				# Write the template file.
 				print_format "Writing <|GREEN $target|> ...\n";
-				open(TARGET, '>', $target) or print_error "unable to write $target: $!";
-				foreach (@final_lines) {
-					say TARGET $_;
+				open(my $fh, '>', $target) or print_error "unable to write $target: $!";
+				foreach (@lines) {
+					say $fh $_;
 				}
-				close(TARGET);
+				close $fh;
 
 				# Set file permissions.
 				if (defined $mode) {

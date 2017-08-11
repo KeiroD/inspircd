@@ -189,7 +189,7 @@ class ModuleHttpStats : public Module, public HTTPRequestEventListener
 						data << "<away>" << Sanitize(u->awaymsg) << "</away><awaytime>" << u->awaytime << "</awaytime>";
 					if (u->IsOper())
 						data << "<opertype>" << Sanitize(u->oper->name) << "</opertype>";
-					data << "<modes>" << u->FormatModes() << "</modes><ident>" << Sanitize(u->ident) << "</ident>";
+					data << "<modes>" << u->GetModeLetters().substr(1) << "</modes><ident>" << Sanitize(u->ident) << "</ident>";
 					LocalUser* lu = IS_LOCAL(u);
 					if (lu)
 						data << "<port>" << lu->GetServerPort() << "</port><servaddr>"
@@ -211,7 +211,7 @@ class ModuleHttpStats : public Module, public HTTPRequestEventListener
 					data << "<server>";
 					data << "<servername>" << b->servername << "</servername>";
 					data << "<parentname>" << b->parentname << "</parentname>";
-					data << "<gecos>" << b->gecos << "</gecos>";
+					data << "<gecos>" << Sanitize(b->gecos) << "</gecos>";
 					data << "<usercount>" << b->usercount << "</usercount>";
 // This is currently not implemented, so, commented out.
 //					data << "<opercount>" << b->opercount << "</opercount>";
