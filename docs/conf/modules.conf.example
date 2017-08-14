@@ -421,6 +421,9 @@
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Chanprotect module: Gives +q and +a channel modes.
+#
+# IMPORTANT: This module has been removed in the next major version of
+# InspIRCd. You should use m_customprefix instead.
 #<module name="m_chanprotect.so">
 
 <chanprotect
@@ -519,6 +522,10 @@
 # key3, key4; the values must be less than 0x80000000 and should be   #
 # picked at random. Prefix is mandatory, will default to network name #
 # if not specified, and will always have a "-" appended.              #
+#                                                                     #
+# IMPORTANT: The compat-host and compat-ip modes have been removed in #
+# the next major version of InspIRCd. You should ONLY use them if you #
+# need backwards compatibility with InspIRCd 1.2.                     #
 #
 #<cloak mode="half"
 #       key="secret"
@@ -824,6 +831,9 @@
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Halfop module: Provides the +h (halfops) channel status mode.
+#
+# IMPORTANT: This module has been removed in the next major version of
+# InspIRCd. You should use m_customprefix instead.
 #<module name="m_halfop.so">
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -999,7 +1009,8 @@
 #           binddn="cn=Manager,dc=brainbox,dc=cc"                     #
 #           bindauth="mysecretpass"                                   #
 #           verbose="yes"                                             #
-#           host="$uid.$ou.inspircd.org">                             #
+#           host="$uid.$ou.inspircd.org"                              #
+#           useusername="no">                                         #
 #                                                                     #
 # <ldapwhitelist cidr="10.42.0.0/16">                                 #
 #                                                                     #
@@ -1010,6 +1021,10 @@
 #                                                                     #
 # The attribute value indicates the attribute which is used to locate #
 # a user account by name. On POSIX systems this is usually 'uid'.     #
+#                                                                     #
+# The useusername setting chooses whether the user's username or      #
+# nickname is used when locating a user account, if a username isn't  #
+# provided in PASS.                                                   #
 #                                                                     #
 # The server parameter indicates the LDAP server to connect to. The   #
 # ldap:// style scheme before the hostname proper is MANDATORY.       #
@@ -1584,13 +1599,12 @@
 #
 #-#-#-#-#-#-#-#-#-# SECURELIST CONFIGURATION -#-#-#-#-#-#-#-#-#-#-#-#-#
 #                                                                     #
-# Securelist can be harmful to some IRC search engines such as        #
-# netsplit.de and searchirc.com. To prevent securelist blocking these #
-# sites from listing, define exception tags as shown below:           #
-#<securehost exception="*@*.searchirc.org">
+# Securelist can be harmful to some IRC search engines. To prevent    #
+# securelist blocking these sites from listing, define exception tags #
+# as shown below:                                                     #
 #<securehost exception="*@*.netsplit.de">
-#<securehost exception="*@echo940.server4you.de">
 #<securehost exception="*@*.ircdriven.com">
+#<securehost exception="*@*.ircs.me">
 #                                                                     #
 # Define the following variable to change how long a user must wait   #
 # before issuing a LIST. If not defined, defaults to 60 seconds.      #
@@ -1681,13 +1695,14 @@
 # You can optionally let the user know that their command was blocked.
 #
 # You may also let SHUN affect opers (defaults to no).
-#<shun enabledcommands="PING PONG QUIT PART JOIN" notifyuser="yes" affectopers="no">
+#<shun enabledcommands="ADMIN PING PONG QUIT PART JOIN" notifyuser="yes" affectopers="no">
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # SSL channel mode module: Adds support for SSL-only channels via
 # channel mode +z and the 'z' extban which matches SSL client
 # certificate fingerprints.
-# Does not do anything useful without a working SSL module (see below).
+# Does not do anything useful without a working SSL module and the
+# m_sslinfo module (see below).
 #<module name="m_sslmodes.so">
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#

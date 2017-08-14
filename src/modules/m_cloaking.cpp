@@ -96,6 +96,10 @@ class CloakUser : public ModeHandler
 
 		if (adding)
 		{
+			// assume this is more correct
+			if (user->registered != REG_ALL && user->host != user->dhost)
+				return MODEACTION_DENY;
+
 			std::string* cloak = ext.get(user);
 
 			if (!cloak)
@@ -493,11 +497,14 @@ class ModuleCloaking : public Module
 	{
 		std::string chost;
 
+		irc::sockets::sockaddrs hostip;
+		bool host_is_ip = irc::sockets::aptosa(host, ip.port(), hostip) && hostip == ip;
+
 		switch (mode)
 		{
 			case MODE_COMPAT_HOST:
 			{
-				if (ipstr != host)
+				if (!host_is_ip)
 				{
 					std::string tail = LastTwoDomainParts(host);
 
@@ -520,7 +527,7 @@ class ModuleCloaking : public Module
 				break;
 			case MODE_HALF_CLOAK:
 			{
-				if (ipstr != host)
+				if (!host_is_ip)
 					chost = prefix + SegmentCloak(host, 1, 6) + LastTwoDomainParts(host);
 				if (chost.empty() || chost.length() > 50)
 					chost = SegmentIP(ip, false);

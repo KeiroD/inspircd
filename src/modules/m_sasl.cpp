@@ -51,10 +51,63 @@ class SaslAuthenticator
 	SaslResult result;
 	bool state_announced;
 
+	/* taken from m_services_account */
+	static bool ReadCGIIRCExt(const char* extname, User* user, std::string& out)
+	{
+		ExtensionItem* wiext = ServerInstance->Extensions.GetItem(extname);
+		if (!wiext)
+			return false;
+
+		if (wiext->creator->ModuleSourceFile != "m_cgiirc.so")
+			return false;
+
+		StringExtItem* stringext = static_cast<StringExtItem*>(wiext);
+		std::string* addr = stringext->get(user);
+		if (!addr)
+			return false;
+
+		out = *addr;
+		return true;
+	}
+
+
+	void SendHostIP()
+	{
+		std::string host, ip;
+
+		if (!ReadCGIIRCExt("cgiirc_webirc_hostname", user, host))
+		{
+			host = user->host;
+		}
+		if (!ReadCGIIRCExt("cgiirc_webirc_ip", user, ip))
+		{
+			ip = user->GetIPString();
+		}
+		else
+		{
+			/* IP addresses starting with a : on irc are a Bad Thing (tm) */
+			if (ip.c_str()[0] == ':')
+				ip.insert(ip.begin(),1,'0');
+		}
+
+		parameterlist params;
+		params.push_back(sasl_target);
+		params.push_back("SASL");
+		params.push_back(user->uuid);
+		params.push_back("*");
+		params.push_back("H");
+		params.push_back(host);
+		params.push_back(ip);
+
+		SendSASL(params);
+	}
+
  public:
 	SaslAuthenticator(User* user_, const std::string& method)
 		: user(user_), state(SASL_INIT), state_announced(false)
 	{
+		SendHostIP();
+
 		parameterlist params;
 		params.push_back(sasl_target);
 		params.push_back("SASL");
@@ -147,7 +200,7 @@ class SaslAuthenticator
 
 		SendSASL(params);
 
-		if (parameters[0][0] == '*')
+		if (parameters[0].c_str()[0] == '*')
 		{
 			this->Abort();
 			return false;
@@ -189,6 +242,7 @@ class CommandAuthenticate : public Command
 		: Command(Creator, "AUTHENTICATE", 1), authExt(ext), cap(Cap)
 	{
 		works_before_reg = true;
+		allow_empty_last_param = false;
 	}
 
 	CmdResult Handle (const std::vector<std::string>& parameters, User *user)
@@ -197,6 +251,9 @@ class CommandAuthenticate : public Command
 		if (user->registered != REG_ALL)
 		{
 			if (!cap.ext.get(user))
+				return CMD_FAILURE;
+
+			if (parameters[0].find(' ') != std::string::npos || parameters[0][0] == ':')
 				return CMD_FAILURE;
 
 			SaslAuthenticator *sasl = authExt.get(user);
@@ -264,7 +321,7 @@ class ModuleSASL : public Module
 	void init()
 	{
 		OnRehash(NULL);
-		Implementation eventlist[] = { I_OnEvent, I_OnUserRegister, I_OnRehash };
+		Implementation eventlist[] = { I_OnEvent, I_OnUserConnect, I_OnRehash };
 		ServerInstance->Modules->Attach(eventlist, this, sizeof(eventlist)/sizeof(Implementation));
 
 		ServiceProvider* providelist[] = { &auth, &sasl, &authExt };
@@ -279,7 +336,7 @@ class ModuleSASL : public Module
 		sasl_target = ServerInstance->Config->ConfValue("sasl")->getString("target", "*");
 	}
 
-	ModResult OnUserRegister(LocalUser *user)
+	void OnUserConnect(LocalUser *user)
 	{
 		SaslAuthenticator *sasl_ = authExt.get(user);
 		if (sasl_)
@@ -287,8 +344,6 @@ class ModuleSASL : public Module
 			sasl_->Abort();
 			authExt.unset(user);
 		}
-
-		return MOD_RES_PASSTHRU;
 	}
 
 	Version GetVersion()
